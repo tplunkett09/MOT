@@ -80,7 +80,31 @@ footer{font:10px system-ui;color:#a9aa9b;text-align:center;padding:5px;backgroun
 </section>
 <footer>Prototype build 0.1 · Progress saves on this device</footer>
 </div>
-<script>
+function showEvent(ev){
+ $('eventType').textContent=ev.type;$('eventTitle').textContent=ev.title;$('eventText').textContent=ev.text;
+ const wrap=$('eventChoices');wrap.innerHTML='';
+ ev.choices.forEach(c=>{let b=document.createElement('button');b.className='choice';b.innerHTML=`${c.label}<small>${c.detail}</small>`;b.onclick=()=>{c.fn();$('eventOverlay').classList.remove('show');s.morale=Math.max(0,Math.min(100,s.morale));s.people.forEach(p=>p.morale=s.morale);renderStats();save();draw();notify('Your decision has been recorded.');};wrap.appendChild(b)});
+ $('eventOverlay').classList.add('show');
+}
+document.querySelectorAll('.speed').forEach(b=>b.onclick=()=>{s.pace=b.dataset.speed;renderStats();save()});
+function openPanel(which){
+ const title={map:'Trail map',people:'Your travelers',supplies:'Wagon supplies',camp:'Make camp'}[which];$('panelTitle').textContent=title;
+ const body=$('panelBody');
+ if(which==='map')body.innerHTML=`<p><b>Independence, Missouri → Fort Kearny → Oregon Country</b><br>Full expedition route · 1,200 miles total</p><div class="card"><b>Current progress</b><div class="bar"><span style="width:${Math.min(100,s.distance/1200*100)}%"></span></div><p class="muted">${Math.round(s.distance)} / 1,200 miles · ${Math.max(0,Math.round(1200-s.distance))} miles to trail’s end</p></div><div class="card"><b>Trail notes</b><p class="muted">Follow the established emigrant road west. Keep an eye on water, grazing, and the condition of your wagon team.</p></div>`;
+ if(which==='people')body.innerHTML=`<p>Your travelers are the heart of this expedition. Their skills can help the group overcome difficult situations.</p><div class="people">${s.people.map(p=>`<div class="person"><b>${p.name}</b><small>${p.role} · ${p.skill}</small><div class="muted">Health ${Math.round(p.health)}% · Energy ${Math.round(p.energy)}%</div><div class="bar"><span style="width:${p.health}%"></span></div></div>`).join('')}</div>`;
+ if(which==='supplies')body.innerHTML=`<p>Keep your load balanced. Food and water are consumed each day; supplies can be replenished through encounters and at settlements.</p><div class="card"><b>Provisions</b><p class="muted">Food: ${Math.round(s.food)} lb · Water: ${Math.round(s.water)} gal · Firewood: ${s.wood}</p></div><div class="card"><b>Equipment</b><p class="muted">Wagon condition: ${Math.round(s.wagon)}% · Oxen condition: ${Math.round(s.oxen)}% · Ammunition: ${s.ammo} · Medicine: ${s.medicine}</p></div><div class="card"><b>Money</b><p class="muted">$${s.money}</p></div>`;
+ if(which==='camp')body.innerHTML=`<p>Stop the wagon to tend to your people and animals. Camp actions use the current day.</p><div class="card"><b>Gather Water</b><p class="muted">Spend a few hours collecting river or stream water (+15 gal water).</p><button class="primary" onclick="campAction('water')">Gather water</button></div><div class="card"><b>Hunt for food</b><p class="muted">Clara leads a short hunt. Costs 2 ammunition; success is not guaranteed.</p><button class="primary" onclick="campAction('hunt')">Go hunting</button></div><div class="card"><b>Rest and recover</b><p class="muted">Restore energy and improve morale. The expedition does not travel today.</p><button onclick="campAction('rest')">Rest at camp</button></div><div class="card"><b>Repair wagon</b><p class="muted">Elias works on the wagon, improving its condition.</p><button onclick="campAction('repair')">Repair (cost $8)</button></div><div class="card"><b>Check livestock</b><p class="muted">Oxen condition: ${Math.round(s.oxen)}%</p><button onclick="campAction('animals')">Tend animals</button></div>`;
+ $('panel').classList.add('open');
+}
+window.openPanel=openPanel;window.closePanel=()=> $('panel').classList.remove('open');
+window.campAction=(a)=>{
+ if(a==='water'){s.water+=15;s.day++;notify('Gathered 15 gallons of fresh water.');}
+ if(a==='hunt'){if(s.ammo<2){notify('Not enough ammunition.');return}$('panel').classList.remove('open');startHunt();return}
+ if(a==='rest'){s.people.forEach(p=>p.energy=Math.min(100,p.energy+24));s.people.forEach(p=>p.health=Math.min(100,p.health+2));s.morale=Math.min(100,s.morale+8);s.oxen=Math.min(100,s.oxen+9);s.day++;notify('The group rests and recovers.');}
+ if(a==='repair'){if(s.money<8){notify('Not enough money.');return}s.money-=8;s.wagon=Math.min(100,s.wagon+18);notify('The wagon has been repaired.')}
+ if(a==='animals'){s.oxen=Math.min(100,s.oxen+12);s.wood=Math.max(0,s.wood-1);notify('The oxen have been watered and checked.')}
+ renderStats();save();openPanel('camp');draw();
+};
 (()=>{
 const canvas=document.getElementById('world'),ctx=canvas.getContext('2d');
 const $=id=>document.getElementById(id);
@@ -137,38 +161,20 @@ function advanceDay(){
  const pace={rest:0,normal:18,fast:27}[s.pace];
  s.day++;let travel=pace*(.72+s.oxen/340+s.wagon/500);if(s.pace==='rest')travel=0;
  const oldDistance=s.distance;
- 
- // Apply and strictly cap distance at 1200 miles max
  s.distance=Math.min(1200,s.distance+travel);
- 
  const foodUse=s.people.length*1.05+(s.pace==='fast'?1.5:0),waterUse=s.people.length*.42+(s.pace==='fast'?.5:0);
  s.food=Math.max(0,s.food-foodUse);s.water=Math.max(0,s.water-waterUse);
  s.people.forEach(p=>{p.energy=Math.min(100,p.energy+(s.pace==='rest'?22:-12-(s.pace==='fast'?10:0)));if(s.food<=0)p.health-=5;if(s.water<=0)p.health-=9;if(p.energy<20)p.health-=2;p.health=Math.max(0,Math.min(100,p.health));});
  if(s.pace==='rest'){s.oxen=Math.min(100,s.oxen+7);s.morale=Math.min(100,s.morale+4)}else{s.oxen=Math.max(0,s.oxen-(s.pace==='fast'?8:4));s.wagon=Math.max(0,s.wagon-(s.pace==='fast'?3:1));s.morale=Math.max(0,Math.min(100,s.morale+(s.pace==='fast'?-3:0)));}
  s.weather=Math.random()<.18?'Rain':Math.random()<.25?'Cloudy':'Clear';
-
- // Check Fort Kearny milestone (reached once distance passes 430 miles)
  const reachedFort=!s.flags.fort&&s.distance>=430;
  if(reachedFort){s.flags.fort=true;s.chapter='Fort Kearny';}
-
- // Check final destination milestone (1200 miles)
  const reachedEnd=s.distance>=1200;
  if(reachedEnd){s.distance=1200;s.completed=true;s.chapter='Trail’s End';}
-
  renderStats();save();draw();
-
- if(reachedEnd){
-  showEvent({type:'Journey complete',title:'You Made It West',text:'The wagon train has reached the end of this prototype journey. Your decisions carried the company across the plains. The journey is complete; travel is now locked so you cannot accidentally travel past the destination.',choices:[{label:'Celebrate the arrival',detail:'Review your company’s condition and supplies.',fn:()=>{s.morale=Math.min(100,s.morale+10);}}, {label:'Start a new journey',detail:'Reset this device’s saved prototype and begin again in Independence.',fn:()=>{s=fresh();localStorage.removeItem('oregonTrailSave');renderStats();save();}}]});
-  return;
- }
- if(reachedFort){
-  showEvent({type:'Milestone reached',title:'Fort Kearny',text:'You have arrived at Fort Kearny. The first leg is complete. Take a moment to trade, rest, and prepare before continuing west along the Platte.',choices:[{label:'Celebrate, then continue west',detail:'Mark Fort Kearny as reached and open the next stretch of trail.',fn:()=>{s.morale=Math.min(100,s.morale+12);s.food+=10;s.chapter='Platte River';}}]});
-  return;
- }
- if(s.food<=0||s.water<=0){
-  showEvent({type:'Survival warning',title:s.food<=0?'Food supplies exhausted':'Water supplies exhausted',text:'Your supplies have run out. The group is weakening. You need to change course, restock, or find a source of supplies immediately.',choices:[{label:'Continue carefully',detail:'The group will suffer until supplies are found.',fn:()=>{s.morale=Math.max(0,s.morale-8);}}]});
-  return;
- }
+ if(reachedEnd){showEvent({type:'Journey complete',title:'You Made It West',text:'The wagon train has reached the end of this prototype journey. Your decisions carried the company across the plains. The journey is complete; travel is now locked so you cannot accidentally travel past the destination.',choices:[{label:'Celebrate the arrival',detail:'Review your company’s condition and supplies.',fn:()=>{s.morale=Math.min(100,s.morale+10);}}, {label:'Start a new journey',detail:'Reset this device’s saved prototype and begin again in Independence.',fn:()=>{s=fresh();localStorage.removeItem('oregonTrailSave');renderStats();save();}}]});return;}
+ if(reachedFort){showEvent({type:'Fort Kearny Trading Post',title:'Fort Kearny Reached',text:'You have arrived at Fort Kearny. Restock provisions and trade before continuing west along the Platte River.',choices:[{label:'Buy 50 lb Food & 20 gal Water ($25)',detail:'Restock essential provisions.',fn:()=>{if(s.money>=25){s.money-=25;s.food+=50;s.water+=20;s.chapter='Platte River';notify('Purchased food and water.');}else{notify('Not enough money!');s.chapter='Platte River';}}},{label:'Buy 10 Ammunition & Repair Wagon ($20)',detail:'Stock up on defense and fix wagon wear.',fn:()=>{if(s.money>=20){s.money-=20;s.ammo+=10;s.wagon=Math.min(100,s.wagon+20);s.chapter='Platte River';notify('Restocked ammo and repaired wagon.');}else{notify('Not enough money!');s.chapter='Platte River';}}},{label:'Skip trading & continue west',detail:'Save your money and push forward.',fn:()=>{s.chapter='Platte River';notify('Departed Fort Kearny.');}}]});return;}
+ if(s.food<=0||s.water<=0){showEvent({type:'Survival warning',title:s.food<=0?'Food supplies exhausted':'Water supplies exhausted',text:'Your supplies have run out. The group is weakening. You need to change course, restock, or find a source of supplies immediately.',choices:[{label:'Continue carefully',detail:'The group will suffer until supplies are found.',fn:()=>{s.morale=Math.max(0,s.morale-8);}}]});return;}
  if(s.flags.fort&&!s.flags.riverCrossed&&s.distance>=650){startRiverCrossing();return;}
  if(Math.random()<.43){showEvent(events[Math.floor(Math.random()*events.length)])}else notify(s.pace==='rest'?'A day of rest. The animals recover.':`Day ${s.day}: ${Math.round(s.distance-oldDistance)} miles covered.`);
 }
@@ -177,7 +183,7 @@ function startHunt(){
  s.ammo-=2;let hits=0,round=0;$('eventType').textContent='Hunting · skill challenge';$('eventTitle').textContent='Track the Deer';$('eventText').textContent='Clara spots movement at the edge of the brush. Tap the deer as it crosses the clearing. You have three chances.';
  const wrap=$('eventChoices');wrap.innerHTML=`<div id="miniStage"><div id="miniPrompt">Round 1 of 3 · Tap the moving target</div><div id="targetLane"><button id="deerTarget" aria-label="Take the shot">🦌</button></div><p class="muted" id="huntScore">Hits: 0</p></div><button class="choice" id="huntFinish" disabled>Finish hunt</button>`;
  const target=$('deerTarget'),prompt=$('miniPrompt'),score=$('huntScore'),finish=$('huntFinish');
- function end(){if(miniTimer)clearTimeout(miniTimer);miniTimer=null;const food=hits*12;s.food+=food;if(hits===0)s.morale=Math.max(0,s.morale-2);$('eventOverlay').classList.remove('show');renderStats();save();draw();notify(hits?`Hunt complete: ${hits} clean shot${hits==1?'':'s'}, +${food} lb food.`:'The deer escaped. No food gained.');}
+ function end(){if(miniTimer)clearTimeout(miniTimer);miniTimer=null;const food=hits*12;s.food+=food;if(hits===0)s.morale=Math.max(0,s.morale-2);$('eventOverlay').classList.remove('show');renderStats();save();draw();notify(hits?`Hunt complete: ${hits} clean shot${hits===1?'':'s'}, +${food} lb food.`:'The deer escaped. No food gained.');}
  function next(){round++;if(round>=3){prompt.textContent=`Hunt complete · ${hits} of 3 hits`;target.style.display='none';finish.disabled=false;finish.textContent='Collect game';return;}prompt.textContent=`Round ${round+1} of 3 · Tap the moving target`;target.style.display='block';target.style.animation='none';void target.offsetWidth;target.style.animation='deerRun 1.8s linear infinite alternate';miniTimer=setTimeout(()=>{target.disabled=true;target.textContent='💨';score.textContent=`Hits: ${hits} · Missed shot`;setTimeout(()=>{target.disabled=false;target.textContent='🦌';next()},550)},2100);}
  target.onclick=()=>{if(target.disabled||round>=3)return;if(miniTimer)clearTimeout(miniTimer);miniTimer=null;hits++;target.disabled=true;target.textContent='✨';score.textContent=`Hits: ${hits}`;setTimeout(()=>{target.disabled=false;target.textContent='🦌';next()},450)};
  finish.onclick=end;$('eventOverlay').classList.add('show');miniTimer=setTimeout(()=>{target.disabled=true;target.textContent='💨';score.textContent=`Hits: ${hits} · Missed shot`;setTimeout(()=>{target.disabled=false;target.textContent='🦌';next()},550)},2100);
@@ -189,30 +195,6 @@ function startRiverCrossing(){
  $('miniPrompt').textContent=`Steer ${prompts[riverStep].toUpperCase()}`;$('riverScore').textContent=`Crossing: ${riverStep} / 4 · Correct: ${riverHits}`;}
  $('steerLeft').onclick=()=>step('left');$('steerRight').onclick=()=>step('right');$('eventOverlay').classList.add('show');
 }
-function showEvent(ev){
- $('eventType').textContent=ev.type;$('eventTitle').textContent=ev.title;$('eventText').textContent=ev.text;
- const wrap=$('eventChoices');wrap.innerHTML='';
- ev.choices.forEach(c=>{let b=document.createElement('button');b.className='choice';b.innerHTML=`${c.label}<small>${c.detail}</small>`;b.onclick=()=>{c.fn();$('eventOverlay').classList.remove('show');s.morale=Math.max(0,Math.min(100,s.morale));s.people.forEach(p=>p.morale=s.morale);renderStats();save();draw();notify('Your decision has been recorded.');};wrap.appendChild(b)});
- $('eventOverlay').classList.add('show');
-}
-document.querySelectorAll('.speed').forEach(b=>b.onclick=()=>{s.pace=b.dataset.speed;renderStats();save()});
-function openPanel(which){
- const title={map:'Trail map',people:'Your travelers',supplies:'Wagon supplies',camp:'Make camp'}[which];$('panelTitle').textContent=title;
- const body=$('panelBody');
- if(which==='map')body.innerHTML=`<p><b>Independence, Missouri → Fort Kearny → Oregon Country</b><br>Full expedition route · 1,200 miles total</p><div class="card"><b>Current progress</b><div class="bar"><span style="width:${Math.min(100,s.distance/1200*100)}%"></span></div><p class="muted">${Math.round(s.distance)} / 1,200 miles · ${Math.max(0,Math.round(1200-s.distance))} miles to trail’s end</p></div><div class="card"><b>Trail notes</b><p class="muted">Follow the established emigrant road west. Keep an eye on water, grazing, and the condition of your wagon team.</p></div>`;
- if(which==='people')body.innerHTML=`<p>Your travelers are the heart of this expedition. Their skills can help the group overcome difficult situations.</p><div class="people">${s.people.map(p=>`<div class="person"><b>${p.name}</b><small>${p.role} · ${p.skill}</small><div class="muted">Health ${Math.round(p.health)}% · Energy ${Math.round(p.energy)}%</div><div class="bar"><span style="width:${p.health}%"></span></div></div>`).join('')}</div>`;
- if(which==='supplies')body.innerHTML=`<p>Keep your load balanced. Food and water are consumed each day; supplies can be replenished through encounters and at settlements.</p><div class="card"><b>Provisions</b><p class="muted">Food: ${Math.round(s.food)} lb · Water: ${Math.round(s.water)} gal · Firewood: ${s.wood}</p></div><div class="card"><b>Equipment</b><p class="muted">Wagon condition: ${Math.round(s.wagon)}% · Oxen condition: ${Math.round(s.oxen)}% · Ammunition: ${s.ammo} · Medicine: ${s.medicine}</p></div><div class="card"><b>Money</b><p class="muted">$${s.money}</p></div>`;
- if(which==='camp')body.innerHTML=`<p>Stop the wagon to tend to your people and animals. Camp actions use the current day.</p><div class="card"><b>Hunt for food</b><p class="muted">Clara leads a short hunt. Costs 2 ammunition; success is not guaranteed.</p><button class="primary" onclick="campAction('hunt')">Go hunting</button></div><div class="card"><b>Rest and recover</b><p class="muted">Restore energy and improve morale. The expedition does not travel today.</p><button onclick="campAction('rest')">Rest at camp</button></div><div class="card"><b>Repair wagon</b><p class="muted">Elias works on the wagon, improving its condition.</p><button onclick="campAction('repair')">Repair (cost $8)</button></div><div class="card"><b>Check livestock</b><p class="muted">Oxen condition: ${Math.round(s.oxen)}%</p><button onclick="campAction('animals')">Tend animals</button></div>`;
- $('panel').classList.add('open');
-}
-window.openPanel=openPanel;window.closePanel=()=> $('panel').classList.remove('open');
-window.campAction=(a)=>{
- if(a==='hunt'){if(s.ammo<2){notify('Not enough ammunition.');return}$('panel').classList.remove('open');startHunt();return}
- if(a==='rest'){s.people.forEach(p=>p.energy=Math.min(100,p.energy+24));s.people.forEach(p=>p.health=Math.min(100,p.health+2));s.morale=Math.min(100,s.morale+8);s.oxen=Math.min(100,s.oxen+9);s.day++;notify('The group rests and recovers.');}
- if(a==='repair'){if(s.money<8){notify('Not enough money.');return}s.money-=8;s.wagon=Math.min(100,s.wagon+18);notify('The wagon has been repaired.')}
- if(a==='animals'){s.oxen=Math.min(100,s.oxen+12);s.wood=Math.max(0,s.wood-1);notify('The oxen have been watered and checked.')}
- renderStats();save();openPanel('camp');draw();
-};
 function poly(points,fill,stroke){ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke()}}
 function ellipse(x,y,rx,ry,fill){ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill()}
 function tree(x,y,scale=1){ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);poly([[-4,0],[4,0],[3,20],[-3,20]],'#66513b');poly([[0,-43],[-20,-12],[0,-17],[19,-9]],'#476a45');poly([[0,-31],[-17,-5],[0,-10],[16,-3]],'#5c8050');ellipse(-7,-17,4,7,'#75915b');ctx.restore()}
@@ -249,6 +231,8 @@ function tick(){sceneTime++;if(sceneTime%3===0)draw();requestAnimationFrame(tick
 window.advanceDay=advanceDay;
 window.addEventListener('resize',draw);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});
+renderStats();draw();if(s.completed){showEvent({type:'Journey complete',title:'You Made It West',text:'This saved journey has already reached the prototype endpoint. Travel is locked. You can review the completed run or start over.',choices:[{label:'Celebrate the arrival',detail:'Keep this completed save.',fn:()=>{}},{label:'Start a new journey',detail:'Reset this device’s saved prototype and begin again in Independence.',fn:()=>{s=fresh();localStorage.removeItem('oregonTrailSave');renderStats();save();}}]});}tick();
+})();
 renderStats();draw();if(s.completed){showEvent({type:'Journey complete',title:'You Made It West',text:'This saved journey has already reached the prototype endpoint. Travel is locked. You can review the completed run or start over.',choices:[{label:'Celebrate the arrival',detail:'Keep this completed save.',fn:()=>{}},{label:'Start a new journey',detail:'Reset this device’s saved prototype and begin again in Independence.',fn:()=>{s=fresh();localStorage.removeItem('oregonTrailSave');renderStats();save();}}]});}tick();
 })();
 </script>
