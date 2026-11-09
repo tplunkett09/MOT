@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#17231d">
-<title>Oregon Trail: The Long Road West — Prototype</title>
+<title>Oregon Trail: The Long Road West — Milestone 2</title>
 <style>
-:root{--ink:#f4eddf;--muted:#c9c1ae;--panel:rgba(25,34,29,.94);--gold:#d8ad65;--line:rgba(245,235,215,.16);--green:#7da77d;--red:#c87562}
+:root{--ink:#f4eddf;--muted:#c9c1ae;--panel:rgba(25,34,29,.94);--gold:#d8ad65;--line:rgba(245,235,215,.16);--green:#7da77d;--red:#c87562;--warning:#e09f3e}
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#17231d;color:var(--ink);font-family:Georgia,"Times New Roman",serif}
 button{font:600 14px system-ui,-apple-system,sans-serif;color:var(--ink);background:#34483b;border:1px solid #71816a;border-radius:10px;padding:10px 13px;min-height:42px;cursor:pointer;touch-action:manipulation}
 button:active{transform:translateY(1px);filter:brightness(1.2)}button:disabled{opacity:.4}
@@ -15,7 +15,10 @@ header{padding:10px 14px 8px;display:flex;justify-content:space-between;align-it
 .brand{min-width:0}.brand h1{font-size:clamp(17px,3vw,23px);margin:0;color:#f2dfbd;letter-spacing:.3px}.brand small{font:11px system-ui;color:#b7b29f;letter-spacing:1.4px;text-transform:uppercase}
 #saveState{font:11px system-ui;color:#b6c7a8;white-space:nowrap}
 #stats{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:#101914;border-bottom:1px solid var(--line);z-index:2}
-.stat{padding:7px 8px;background:#223128;min-width:0}.stat label{display:block;font:10px system-ui;color:#b8b7a7;text-transform:uppercase;letter-spacing:.8px}.stat strong{display:block;font:600 16px system-ui;color:#f4e6c9;margin-top:2px;white-space:nowrap}.stat em{font:10px system-ui;color:#b7c9aa;font-style:normal}
+.stat{padding:7px 8px;background:#223128;min-width:0;cursor:pointer;transition:background .2s}.stat:hover{background:#2b3e33}
+.stat label{display:block;font:10px system-ui;color:#b8b7a7;text-transform:uppercase;letter-spacing:.8px}.stat strong{display:block;font:600 16px system-ui;color:#f4e6c9;margin-top:2px;white-space:nowrap}.stat em{font:10px system-ui;color:#b7c9aa;font-style:normal}
+.stat.alert{background:#4a2b25;border-bottom:2px solid var(--red);animation:pulseAlert 1.2s infinite alternate}
+@keyframes pulseAlert{from{background:#4a2b25}to{background:#63372f}}
 #worldWrap{position:relative;flex:1;min-height:190px;overflow:hidden;background:#9aa77b}
 canvas{width:100%;height:100%;display:block}
 #locationTag{position:absolute;left:12px;top:11px;padding:7px 10px;background:rgba(23,35,29,.78);border:1px solid rgba(255,255,255,.22);border-radius:8px;font:11px system-ui;letter-spacing:.7px;text-transform:uppercase}
@@ -23,13 +26,12 @@ canvas{width:100%;height:100%;display:block}
 #toast{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:rgba(22,32,26,.9);border:1px solid #a9a17e;border-radius:9px;padding:8px 12px;font:12px system-ui;max-width:90%;text-align:center;opacity:0;transition:opacity .25s;pointer-events:none}
 #toast.show{opacity:1}
 #lower{background:#1b2921;border-top:1px solid var(--line);padding:9px 12px calc(9px + env(safe-area-inset-bottom));z-index:2}
-#travelRow{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
-#travelRow .sectionLabel{font:10px system-ui;color:#bdb59f;text-transform:uppercase;letter-spacing:1px;margin-right:3px}
-.speed{flex:1;min-width:70px}.speed.active{background:#a67d43;border-color:#e4c58c;color:#fff8e8}
-#travelRow .dayBtn{background:#775a34;border-color:#bd9860;min-width:112px}
+.controlRow{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:6px}
+.controlRow .sectionLabel{font:10px system-ui;color:#bdb59f;text-transform:uppercase;letter-spacing:1px;margin-right:3px}
+.speed,.ration{flex:1;min-width:65px}.speed.active,.ration.active{background:#a67d43;border-color:#e4c58c;color:#fff8e8}
+#travelRow .dayBtn{background:#775a34;border-color:#bd9860;min-width:112px;flex:1.2}
 #nav{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:8px}
 #nav button{background:#293b30;border-color:#526554;padding:9px 5px;font-size:12px}
-#nav button.active{background:#52684e;border-color:#9fb08c}
 #panel{position:absolute;inset:0;background:rgba(8,14,10,.66);display:none;align-items:flex-end;justify-content:center;z-index:5;padding:12px}
 #panel.open{display:flex}
 .sheet{width:min(650px,100%);max-height:88%;overflow:auto;background:#202e25;border:1px solid #8e896d;border-radius:16px;padding:17px;box-shadow:0 12px 40px #0008}
@@ -49,23 +51,22 @@ canvas{width:100%;height:100%;display:block}
 .eventCard .eyebrow{font:10px system-ui;color:#d9b779;letter-spacing:1.5px;text-transform:uppercase}
 .eventCard h2{font-size:25px;color:#f4dfb9;margin:7px 0}
 .eventCard p{font:14px/1.5 system-ui;color:#e0ddcf}
-.choice{display:block;width:100%;text-align:left;margin-top:8px;background:#354a39;border-color:#71836d}
+.choice{display:block;width:100%^^;text-align:left;margin-top:8px;background:#354a39;border-color:#71836d}
 .choice small{display:block;color:#c7c8b8;font-weight:400;margin-top:3px}
 #miniStage{margin:14px 0;padding:14px;border:1px solid #8e896d;border-radius:12px;background:#17251d;text-align:center}#miniPrompt{font:13px system-ui;color:#e6ddc8;margin-bottom:10px}#targetLane{height:76px;position:relative;overflow:hidden;border-radius:9px;background:linear-gradient(#718b69 0 55%,#9a8b5f 55%);border:1px solid #71816a}#deerTarget{position:absolute;top:13px;left:4%;font-size:38px;border:0;background:transparent;padding:2px;min-height:44px;animation:deerRun 1.8s linear infinite alternate}#deerTarget:active{transform:scale(.9)}@keyframes deerRun{from{left:4%}to{left:78%}}.riverChoices{display:grid;grid-template-columns:1fr 1fr;gap:9px}.riverChoices button{min-height:54px;font-size:17px}
 footer{font:10px system-ui;color:#a9aa9b;text-align:center;padding:5px;background:#17231d}
-@media(min-width:760px){#app{border-left:1px solid #405044;border-right:1px solid #405044}#lower{padding-left:18px;padding-right:18px}#nav button{font-size:13px}}
-@media(max-width:390px){.stat{padding:6px 5px}.stat strong{font-size:14px}.stat label{font-size:9px}button{padding:9px 8px}.speed{min-width:60px}}
+@media(min-width:760px){#app{border-left:1px solid #405044;border-right:1px solid #405044}#lower{padding-left:18px;padding-right:18px}}
 </style>
 </head>
 <body>
 <div id="app">
 <header><div class="brand"><small>A frontier survival adventure · 1846</small><h1>Oregon Trail: The Long Road West</h1></div><div id="saveState">● Journey saved</div></header>
 <section id="stats">
- <div class="stat"><label>Day</label><strong id="day">1</strong><em id="date">April 1</em></div>
- <div class="stat"><label>Distance</label><strong id="distance">0 mi</strong><em id="distanceCaption">to trail’s end · 1,200 mi</em></div>
- <div class="stat"><label>Food</label><strong id="food">180 lb</strong><em id="foodDays">~10 days</em></div>
- <div class="stat"><label>Water</label><strong id="water">60 gal</strong><em id="waterDays">~3 days</em></div>
- <div class="stat"><label>Group health</label><strong id="health">96%</strong><em id="morale">Morale 82</em></div>
+ <div class="stat" id="statDay"><label>Day</label><strong id="day">1</strong><em id="date">April 1</em></div>
+ <div class="stat" id="statDist"><label>Distance</label><strong id="distance">0 mi</strong><em id="distanceCaption">to trail’s end · 1,200 mi</em></div>
+ <div class="stat" id="statFood" onclick="openPanel('supplies')" title="Click to view food supplies"><label>Food</label><strong id="food">180 lb</strong><em id="foodDays">~10 days</em></div>
+ <div class="stat" id="statWater" onclick="openPanel('camp')" title="Click to gather water"><label>Water</label><strong id="water">60 gal</strong><em id="waterDays">~3 days</em></div>
+ <div class="stat" id="statHealth" onclick="openPanel('people')" title="Click to check travelers"><label>Group health</label><strong id="health">96%</strong><em id="morale">Morale 82</em></div>
 </section>
 <div id="worldWrap">
  <canvas id="world"></canvas>
@@ -75,23 +76,24 @@ footer{font:10px system-ui;color:#a9aa9b;text-align:center;padding:5px;backgroun
  <div id="panel"><div class="sheet"><div class="sheetHead"><h2 id="panelTitle">Camp</h2><button class="close" onclick="closePanel()">✕</button></div><div id="panelBody"></div></div></div>
 </div>
 <section id="lower">
- <div id="travelRow"><span class="sectionLabel">Travel pace</span><button class="speed" data-speed="rest">Rest</button><button class="speed active" data-speed="normal">Normal</button><button class="speed" data-speed="fast">Fast</button><button class="dayBtn" id="travelButton" onclick="advanceDay()">Travel 1 day →</button></div>
+ <div class="controlRow"><span class="sectionLabel">Travel pace</span><button class="speed" data-speed="rest">Rest</button><button class="speed active" data-speed="normal">Normal</button><button class="speed" data-speed="fast">Fast</button><button class="dayBtn" id="travelButton" onclick="advanceDay()">Travel 1 day →</button></div>
+ <div class="controlRow"><span class="sectionLabel">Rations</span><button class="ration" data-ration="filling">Filling</button><button class="ration active" data-ration="meager">Meager</button><button class="ration" data-ration="bare">Bare Bones</button></div>
  <div id="nav"><button onclick="openPanel('map')">⌖ Map</button><button onclick="openPanel('people')">♙ Travelers</button><button onclick="openPanel('supplies')">▤ Supplies</button><button onclick="openPanel('camp')">⌂ Camp</button></div>
 </section>
-<footer>Prototype build 0.1 · Progress saves on this device</footer>
+<footer>Milestone 2 Build · Streamlined Survival & Rations</footer>
 </div>
 <script>
 (()=>{
 const canvas=document.getElementById('world'),ctx=canvas.getContext('2d');
 const $=id=>document.getElementById(id);
-const fresh=()=>({day:1,distance:0,food:180,water:60,money:85,health:96,morale:82,oxen:94,wagon:100,ammo:18,medicine:5,wood:12,pace:'normal',chapter:'Independence',weather:'Clear',people:[
+const fresh=()=>({day:1,distance:0,food:180,water:60,money:85,health:96,morale:82,oxen:94,wagon:100,ammo:18,medicine:5,wood:12,pace:'normal',ration:'meager',chapter:'Independence',weather:'Clear',people:[
 {name:'Elias',role:'Wagoner',skill:'Repair',health:100,energy:91,morale:84},
 {name:'Martha',role:'Healer',skill:'Medicine',health:96,energy:88,morale:86},
 {name:'Jonah',role:'Scout',skill:'Scouting',health:94,energy:82,morale:78},
 {name:'Clara',role:'Hunter',skill:'Hunting',health:94,energy:90,morale:80}
 ],flags:{},log:['The expedition is ready to depart Independence.']});
 let s;try{s=JSON.parse(localStorage.getItem('oregonTrailSave'))||fresh()}catch(e){s=fresh()}
-s.flags=s.flags||{};s.completed=!!s.completed;s.chapter=s.chapter||'Independence';s.distance=Math.max(0,Number(s.distance)||0);s.distance=Math.min(1200,s.distance);
+s.flags=s.flags||{};s.completed=!!s.completed;s.chapter=s.chapter||'Independence';s.distance=Math.max(0,Number(s.distance)||0);s.distance=Math.min(1200,s.distance);s.ration=s.ration||'meager';
 if(s.distance>=1200)s.completed=true;
 let cam=0,sceneTime=0,toastTimer,miniTimer=null,riverStep=0,riverHits=0;
 const events=[
@@ -100,7 +102,7 @@ const events=[
   {label:'Keep moving',detail:'Preserve your travel time.',fn:()=>{s.morale-=2;}}
  ]},
  {type:'Equipment',title:'A Loose Axle',text:'The wagon begins to wobble. Elias notices that an axle fitting has worked loose over the rough ground.',choices:[
-  {label:'Repair it carefully',detail:'Use 1 spare repair kit (prototype supply) and spend the day.',fn:()=>{s.wagon=Math.min(100,s.wagon+7);}},
+  {label:'Repair it carefully',detail:'Use 1 spare repair kit and spend the day.',fn:()=>{s.wagon=Math.min(100,s.wagon+7);}},
   {label:'Tighten it and continue',detail:'Quick fix; the wagon may take more wear.',fn:()=>{s.wagon-=9;s.morale-=2;}}
  ]},
  {type:'Wildlife',title:'Fresh Tracks',text:'Clara finds fresh deer tracks near a wooded creek. There may be enough time to hunt before making camp.',choices:[
@@ -124,10 +126,18 @@ function renderStats(){
  $('food').textContent=Math.max(0,Math.round(s.food))+' lb';$('water').textContent=Math.max(0,Math.round(s.water))+' gal';
  $('foodDays').textContent='~'+Math.max(0,Math.floor(s.food/18))+' days';$('waterDays').textContent='~'+Math.max(0,Math.floor(s.water/20))+' days';
  $('health').textContent=average('health')+'%';$('morale').textContent='Morale '+Math.round(s.morale);
+ 
+ // Visual Alert Pulsing for low stats
+ $('statFood').classList.toggle('alert', s.food < 25);
+ $('statWater').classList.toggle('alert', s.water < 15);
+ $('statHealth').classList.toggle('alert', average('health') < 60);
+
  $('locationTag').textContent=s.completed?'Trail’s End · Oregon Country':s.flags.fort?'Beyond Fort Kearny · Platte River':s.distance<150?'Independence · Missouri':s.distance<300?'Kansas River Country':s.distance<430?'Great Plains · Nebraska':'Fort Kearny approach';
  $('distanceCaption').textContent=s.completed?'Journey complete':s.flags.fort?'of 1,200 mi · west of Fort Kearny':'to Fort Kearny · 430 mi';
  $('weatherTag').textContent=weatherIcon(s.weather)+' '+s.weather+' · '+(s.weather==='Clear'?'Mild':s.weather==='Rain'?'Wet':'Cool');
+ 
  document.querySelectorAll('.speed').forEach(b=>{b.classList.toggle('active',b.dataset.speed===s.pace);b.disabled=s.completed});
+ document.querySelectorAll('.ration').forEach(b=>{b.classList.toggle('active',b.dataset.ration===s.ration);b.disabled=s.completed});
  $('travelButton').disabled=s.completed;$('travelButton').textContent=s.completed?'Journey complete':'Travel 1 day →';
 }
 function dateLabel(day){let d=new Date(1846,3,1);d.setDate(d.getDate()+day-1);return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}
@@ -138,22 +148,41 @@ function advanceDay(){
  s.day++;let travel=pace*(.72+s.oxen/340+s.wagon/500);if(s.pace==='rest')travel=0;
  const oldDistance=s.distance;
  s.distance=Math.min(1200,s.distance+travel);
- const foodUse=s.people.length*1.05+(s.pace==='fast'?1.5:0),waterUse=s.people.length*.42+(s.pace==='fast'?.5:0);
+ 
+ // Ration multipliers affecting consumption and morale/health
+ const rationMul={filling:1.3,meager:1.0,bare:0.6}[s.ration];
+ const foodUse=(s.people.length*1.1*rationMul)+(s.pace==='fast'?1.5:0);
+ const waterUse=s.people.length*.42+(s.pace==='fast'?.5:0);
+ 
  s.food=Math.max(0,s.food-foodUse);s.water=Math.max(0,s.water-waterUse);
- s.people.forEach(p=>{p.energy=Math.min(100,p.energy+(s.pace==='rest'?22:-12-(s.pace==='fast'?10:0)));if(s.food<=0)p.health-=5;if(s.water<=0)p.health-=9;if(p.energy<20)p.health-=2;p.health=Math.max(0,Math.min(100,p.health));});
+ 
+ s.people.forEach(p=>{
+  p.energy=Math.min(100,p.energy+(s.pace==='rest'?22:-12-(s.pace==='fast'?10:0)));
+  if(s.ration==='bare') { p.health-=2; p.morale-=1; }
+  if(s.ration==='filling') { p.morale+=1; }
+  if(s.food<=0)p.health-=5;
+  if(s.water<=0)p.health-=9;
+  if(p.energy<20)p.health-=2;
+  p.health=Math.max(0,Math.min(100,p.health));
+ });
+ 
  if(s.pace==='rest'){s.oxen=Math.min(100,s.oxen+7);s.morale=Math.min(100,s.morale+4)}else{s.oxen=Math.max(0,s.oxen-(s.pace==='fast'?8:4));s.wagon=Math.max(0,s.wagon-(s.pace==='fast'?3:1));s.morale=Math.max(0,Math.min(100,s.morale+(s.pace==='fast'?-3:0)));}
  s.weather=Math.random()<.18?'Rain':Math.random()<.25?'Cloudy':'Clear';
+ 
  const reachedFort=!s.flags.fort&&s.distance>=430;
  if(reachedFort){s.flags.fort=true;s.chapter='Fort Kearny';}
  const reachedEnd=s.distance>=1200;
  if(reachedEnd){s.distance=1200;s.completed=true;s.chapter='Trail’s End';}
+ 
  renderStats();save();draw();
+ 
  if(reachedEnd){showEvent({type:'Journey complete',title:'You Made It West',text:'The wagon train has reached the end of this prototype journey. Your decisions carried the company across the plains. The journey is complete; travel is now locked so you cannot accidentally travel past the destination.',choices:[{label:'Celebrate the arrival',detail:'Review your company’s condition and supplies.',fn:()=>{s.morale=Math.min(100,s.morale+10);}}, {label:'Start a new journey',detail:'Reset this device’s saved prototype and begin again in Independence.',fn:()=>{s=fresh();localStorage.removeItem('oregonTrailSave');renderStats();save();}}]});return;}
  if(reachedFort){showEvent({type:'Fort Kearny Trading Post',title:'Fort Kearny Reached',text:'You have arrived at Fort Kearny. Restock provisions and trade before continuing west along the Platte River.',choices:[{label:'Buy 50 lb Food & 20 gal Water ($25)',detail:'Restock essential provisions.',fn:()=>{if(s.money>=25){s.money-=25;s.food+=50;s.water+=20;s.chapter='Platte River';notify('Purchased food and water.');}else{notify('Not enough money!');s.chapter='Platte River';}}},{label:'Buy 10 Ammunition & Repair Wagon ($20)',detail:'Stock up on defense and fix wagon wear.',fn:()=>{if(s.money>=20){s.money-=20;s.ammo+=10;s.wagon=Math.min(100,s.wagon+20);s.chapter='Platte River';notify('Restocked ammo and repaired wagon.');}else{notify('Not enough money!');s.chapter='Platte River';}}},{label:'Skip trading & continue west',detail:'Save your money and push forward.',fn:()=>{s.chapter='Platte River';notify('Departed Fort Kearny.');}}]});return;}
  if(s.food<=0||s.water<=0){showEvent({type:'Survival warning',title:s.food<=0?'Food supplies exhausted':'Water supplies exhausted',text:'Your supplies have run out. The group is weakening. You need to change course, restock, or find a source of supplies immediately.',choices:[{label:'Continue carefully',detail:'The group will suffer until supplies are found.',fn:()=>{s.morale=Math.max(0,s.morale-8);}}]});return;}
  if(s.flags.fort&&!s.flags.riverCrossed&&s.distance>=650){startRiverCrossing();return;}
  if(Math.random()<.43){showEvent(events[Math.floor(Math.random()*events.length)])}else notify(s.pace==='rest'?'A day of rest. The animals recover.':`Day ${s.day}: ${Math.round(s.distance-oldDistance)} miles covered.`);
 }
+
 function startHunt(){
  if(s.completed)return;if(s.ammo<2){notify('You need at least 2 rounds of ammunition to hunt.');return;}
  s.ammo-=2;let hits=0,round=0;$('eventType').textContent='Hunting · skill challenge';$('eventTitle').textContent='Track the Deer';$('eventText').textContent='Clara spots movement at the edge of the brush. Tap the deer as it crosses the clearing. You have three chances.';
@@ -164,6 +193,7 @@ function startHunt(){
  target.onclick=()=>{if(target.disabled||round>=3)return;if(miniTimer)clearTimeout(miniTimer);miniTimer=null;hits++;target.disabled=true;target.textContent='✨';score.textContent=`Hits: ${hits}`;setTimeout(()=>{target.disabled=false;target.textContent='🦌';next()},450)};
  finish.onclick=end;$('eventOverlay').classList.add('show');miniTimer=setTimeout(()=>{target.disabled=true;target.textContent='💨';score.textContent=`Hits: ${hits} · Missed shot`;setTimeout(()=>{target.disabled=false;target.textContent='🦌';next()},550)},2100);
 }
+
 function startRiverCrossing(){
  riverStep=0;riverHits=0;const prompts=['left','right','right','left'];$('eventType').textContent='Interactive challenge · River crossing';$('eventTitle').textContent='The Platte River';$('eventText').textContent='The river is broad and the current is stronger than it looks. Keep the wagon aligned by steering in the direction shown. Complete four steering calls to guide the team across.';
  const wrap=$('eventChoices');wrap.innerHTML=`<div id="miniStage"><div id="miniPrompt">Steer LEFT</div><div class="riverChoices"><button id="steerLeft">← LEFT</button><button id="steerRight">RIGHT →</button></div><p class="muted" id="riverScore">Crossing: 0 / 4</p></div>`;
@@ -171,13 +201,10 @@ function startRiverCrossing(){
  $('miniPrompt').textContent=`Steer ${prompts[riverStep].toUpperCase()}`;$('riverScore').textContent=`Crossing: ${riverStep} / 4 · Correct: ${riverHits}`;}
  $('steerLeft').onclick=()=>step('left');$('steerRight').onclick=()=>step('right');$('eventOverlay').classList.add('show');
 }
-function showEvent(ev){
- $('eventType').textContent=ev.type;$('eventTitle').textContent=ev.title;$('eventText').textContent=ev.text;
- const wrap=$('eventChoices');wrap.innerHTML='';
- ev.choices.forEach(c=>{let b=document.createElement('button');b.className='choice';b.innerHTML=`${c.label}<small>${c.detail}</small>`;b.onclick=()=>{c.fn();$('eventOverlay').classList.remove('show');s.morale=Math.max(0,Math.min(100,s.morale));s.people.forEach(p=>p.morale=s.morale);renderStats();save();draw();notify('Your decision has been recorded.');};wrap.appendChild(b)});
- $('eventOverlay').classList.add('show');
-}
+
 document.querySelectorAll('.speed').forEach(b=>b.onclick=()=>{s.pace=b.dataset.speed;renderStats();save()});
+document.querySelectorAll('.ration').forEach(b=>b.onclick=()=>{s.ration=b.dataset.ration;renderStats();save()});
+
 function openPanel(which){
  const title={map:'Trail map',people:'Your travelers',supplies:'Wagon supplies',camp:'Make camp'}[which];$('panelTitle').textContent=title;
  const body=$('panelBody');
@@ -196,6 +223,7 @@ window.campAction=(a)=>{
  if(a==='animals'){s.oxen=Math.min(100,s.oxen+12);s.wood=Math.max(0,s.wood-1);notify('The oxen have been watered and checked.')}
  renderStats();save();openPanel('camp');draw();
 };
+
 function poly(points,fill,stroke){ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke()}}
 function ellipse(x,y,rx,ry,fill){ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill()}
 function tree(x,y,scale=1){ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);poly([[-4,0],[4,0],[3,20],[-3,20]],'#66513b');poly([[0,-43],[-20,-12],[0,-17],[19,-9]],'#476a45');poly([[0,-31],[-17,-5],[0,-10],[16,-3]],'#5c8050');ellipse(-7,-17,4,7,'#75915b');ctx.restore()}
@@ -214,7 +242,7 @@ function wagon(x,y,scale=1){
 function draw(){
  const rect=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2),w=rect.width,h=rect.height;
  if(!w||!h)return;canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
- let g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,'#9fb3a0');g.addColorStop(.52,'#c5c69b');g.addColorStop(1,'#8d9b69');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+ let g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,'#9fb3a0');g.addColorStop(.52,'#c5c69b');g.annotationColor='red';g.addColorStop(1,'#8d9b69');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
  poly([[0,h*.48],[w*.18,h*.28],[w*.34,h*.43],[w*.53,h*.25],[w*.75,h*.43],[w,h*.29],[w,h*.62],[0,h*.65]],'#7d9675');
  poly([[0,h*.58],[w*.2,h*.43],[w*.4,h*.56],[w*.64,h*.39],[w*.82,h*.54],[w,h*.43],[w,h*.72],[0,h*.72]],'#8da16f');
  for(let i=0;i<18;i++)tree((i*83+17-cam*.12)%(w+70)-30,h*.55+(i%3)*7,.45+(i%3)*.12);
