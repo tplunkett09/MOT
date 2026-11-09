@@ -80,31 +80,7 @@ footer{font:10px system-ui;color:#a9aa9b;text-align:center;padding:5px;backgroun
 </section>
 <footer>Prototype build 0.1 · Progress saves on this device</footer>
 </div>
-function showEvent(ev){
- $('eventType').textContent=ev.type;$('eventTitle').textContent=ev.title;$('eventText').textContent=ev.text;
- const wrap=$('eventChoices');wrap.innerHTML='';
- ev.choices.forEach(c=>{let b=document.createElement('button');b.className='choice';b.innerHTML=`${c.label}<small>${c.detail}</small>`;b.onclick=()=>{c.fn();$('eventOverlay').classList.remove('show');s.morale=Math.max(0,Math.min(100,s.morale));s.people.forEach(p=>p.morale=s.morale);renderStats();save();draw();notify('Your decision has been recorded.');};wrap.appendChild(b)});
- $('eventOverlay').classList.add('show');
-}
-document.querySelectorAll('.speed').forEach(b=>b.onclick=()=>{s.pace=b.dataset.speed;renderStats();save()});
-function openPanel(which){
- const title={map:'Trail map',people:'Your travelers',supplies:'Wagon supplies',camp:'Make camp'}[which];$('panelTitle').textContent=title;
- const body=$('panelBody');
- if(which==='map')body.innerHTML=`<p><b>Independence, Missouri → Fort Kearny → Oregon Country</b><br>Full expedition route · 1,200 miles total</p><div class="card"><b>Current progress</b><div class="bar"><span style="width:${Math.min(100,s.distance/1200*100)}%"></span></div><p class="muted">${Math.round(s.distance)} / 1,200 miles · ${Math.max(0,Math.round(1200-s.distance))} miles to trail’s end</p></div><div class="card"><b>Trail notes</b><p class="muted">Follow the established emigrant road west. Keep an eye on water, grazing, and the condition of your wagon team.</p></div>`;
- if(which==='people')body.innerHTML=`<p>Your travelers are the heart of this expedition. Their skills can help the group overcome difficult situations.</p><div class="people">${s.people.map(p=>`<div class="person"><b>${p.name}</b><small>${p.role} · ${p.skill}</small><div class="muted">Health ${Math.round(p.health)}% · Energy ${Math.round(p.energy)}%</div><div class="bar"><span style="width:${p.health}%"></span></div></div>`).join('')}</div>`;
- if(which==='supplies')body.innerHTML=`<p>Keep your load balanced. Food and water are consumed each day; supplies can be replenished through encounters and at settlements.</p><div class="card"><b>Provisions</b><p class="muted">Food: ${Math.round(s.food)} lb · Water: ${Math.round(s.water)} gal · Firewood: ${s.wood}</p></div><div class="card"><b>Equipment</b><p class="muted">Wagon condition: ${Math.round(s.wagon)}% · Oxen condition: ${Math.round(s.oxen)}% · Ammunition: ${s.ammo} · Medicine: ${s.medicine}</p></div><div class="card"><b>Money</b><p class="muted">$${s.money}</p></div>`;
- if(which==='camp')body.innerHTML=`<p>Stop the wagon to tend to your people and animals. Camp actions use the current day.</p><div class="card"><b>Gather Water</b><p class="muted">Spend a few hours collecting river or stream water (+15 gal water).</p><button class="primary" onclick="campAction('water')">Gather water</button></div><div class="card"><b>Hunt for food</b><p class="muted">Clara leads a short hunt. Costs 2 ammunition; success is not guaranteed.</p><button class="primary" onclick="campAction('hunt')">Go hunting</button></div><div class="card"><b>Rest and recover</b><p class="muted">Restore energy and improve morale. The expedition does not travel today.</p><button onclick="campAction('rest')">Rest at camp</button></div><div class="card"><b>Repair wagon</b><p class="muted">Elias works on the wagon, improving its condition.</p><button onclick="campAction('repair')">Repair (cost $8)</button></div><div class="card"><b>Check livestock</b><p class="muted">Oxen condition: ${Math.round(s.oxen)}%</p><button onclick="campAction('animals')">Tend animals</button></div>`;
- $('panel').classList.add('open');
-}
-window.openPanel=openPanel;window.closePanel=()=> $('panel').classList.remove('open');
-window.campAction=(a)=>{
- if(a==='water'){s.water+=15;s.day++;notify('Gathered 15 gallons of fresh water.');}
- if(a==='hunt'){if(s.ammo<2){notify('Not enough ammunition.');return}$('panel').classList.remove('open');startHunt();return}
- if(a==='rest'){s.people.forEach(p=>p.energy=Math.min(100,p.energy+24));s.people.forEach(p=>p.health=Math.min(100,p.health+2));s.morale=Math.min(100,s.morale+8);s.oxen=Math.min(100,s.oxen+9);s.day++;notify('The group rests and recovers.');}
- if(a==='repair'){if(s.money<8){notify('Not enough money.');return}s.money-=8;s.wagon=Math.min(100,s.wagon+18);notify('The wagon has been repaired.')}
- if(a==='animals'){s.oxen=Math.min(100,s.oxen+12);s.wood=Math.max(0,s.wood-1);notify('The oxen have been watered and checked.')}
- renderStats();save();openPanel('camp');draw();
-};
+<script>
 (()=>{
 const canvas=document.getElementById('world'),ctx=canvas.getContext('2d');
 const $=id=>document.getElementById(id);
@@ -195,6 +171,31 @@ function startRiverCrossing(){
  $('miniPrompt').textContent=`Steer ${prompts[riverStep].toUpperCase()}`;$('riverScore').textContent=`Crossing: ${riverStep} / 4 · Correct: ${riverHits}`;}
  $('steerLeft').onclick=()=>step('left');$('steerRight').onclick=()=>step('right');$('eventOverlay').classList.add('show');
 }
+function showEvent(ev){
+ $('eventType').textContent=ev.type;$('eventTitle').textContent=ev.title;$('eventText').textContent=ev.text;
+ const wrap=$('eventChoices');wrap.innerHTML='';
+ ev.choices.forEach(c=>{let b=document.createElement('button');b.className='choice';b.innerHTML=`${c.label}<small>${c.detail}</small>`;b.onclick=()=>{c.fn();$('eventOverlay').classList.remove('show');s.morale=Math.max(0,Math.min(100,s.morale));s.people.forEach(p=>p.morale=s.morale);renderStats();save();draw();notify('Your decision has been recorded.');};wrap.appendChild(b)});
+ $('eventOverlay').classList.add('show');
+}
+document.querySelectorAll('.speed').forEach(b=>b.onclick=()=>{s.pace=b.dataset.speed;renderStats();save()});
+function openPanel(which){
+ const title={map:'Trail map',people:'Your travelers',supplies:'Wagon supplies',camp:'Make camp'}[which];$('panelTitle').textContent=title;
+ const body=$('panelBody');
+ if(which==='map')body.innerHTML=`<p><b>Independence, Missouri → Fort Kearny → Oregon Country</b><br>Full expedition route · 1,200 miles total</p><div class="card"><b>Current progress</b><div class="bar"><span style="width:${Math.min(100,s.distance/1200*100)}%"></span></div><p class="muted">${Math.round(s.distance)} / 1,200 miles · ${Math.max(0,Math.round(1200-s.distance))} miles to trail’s end</p></div><div class="card"><b>Trail notes</b><p class="muted">Follow the established emigrant road west. Keep an eye on water, grazing, and the condition of your wagon team.</p></div>`;
+ if(which==='people')body.innerHTML=`<p>Your travelers are the heart of this expedition. Their skills can help the group overcome difficult situations.</p><div class="people">${s.people.map(p=>`<div class="person"><b>${p.name}</b><small>${p.role} · ${p.skill}</small><div class="muted">Health ${Math.round(p.health)}% · Energy ${Math.round(p.energy)}%</div><div class="bar"><span style="width:${p.health}%"></span></div></div>`).join('')}</div>`;
+ if(which==='supplies')body.innerHTML=`<p>Keep your load balanced. Food and water are consumed each day; supplies can be replenished through encounters and at settlements.</p><div class="card"><b>Provisions</b><p class="muted">Food: ${Math.round(s.food)} lb · Water: ${Math.round(s.water)} gal · Firewood: ${s.wood}</p></div><div class="card"><b>Equipment</b><p class="muted">Wagon condition: ${Math.round(s.wagon)}% · Oxen condition: ${Math.round(s.oxen)}% · Ammunition: ${s.ammo} · Medicine: ${s.medicine}</p></div><div class="card"><b>Money</b><p class="muted">$${s.money}</p></div>`;
+ if(which==='camp')body.innerHTML=`<p>Stop the wagon to tend to your people and animals. Camp actions use the current day.</p><div class="card"><b>Gather Water</b><p class="muted">Spend a few hours collecting river or stream water (+15 gal water).</p><button class="primary" onclick="campAction('water')">Gather water</button></div><div class="card"><b>Hunt for food</b><p class="muted">Clara leads a short hunt. Costs 2 ammunition; success is not guaranteed.</p><button class="primary" onclick="campAction('hunt')">Go hunting</button></div><div class="card"><b>Rest and recover</b><p class="muted">Restore energy and improve morale. The expedition does not travel today.</p><button onclick="campAction('rest')">Rest at camp</button></div><div class="card"><b>Repair wagon</b><p class="muted">Elias works on the wagon, improving its condition.</p><button onclick="campAction('repair')">Repair (cost $8)</button></div><div class="card"><b>Check livestock</b><p class="muted">Oxen condition: ${Math.round(s.oxen)}%</p><button onclick="campAction('animals')">Tend animals</button></div>`;
+ $('panel').classList.add('open');
+}
+window.openPanel=openPanel;window.closePanel=()=> $('panel').classList.remove('open');
+window.campAction=(a)=>{
+ if(a==='water'){s.water+=15;s.day++;notify('Gathered 15 gallons of fresh water.');}
+ if(a==='hunt'){if(s.ammo<2){notify('Not enough ammunition.');return}$('panel').classList.remove('open');startHunt();return}
+ if(a==='rest'){s.people.forEach(p=>p.energy=Math.min(100,p.energy+24));s.people.forEach(p=>p.health=Math.min(100,p.health+2));s.morale=Math.min(100,s.morale+8);s.oxen=Math.min(100,s.oxen+9);s.day++;notify('The group rests and recovers.');}
+ if(a==='repair'){if(s.money<8){notify('Not enough money.');return}s.money-=8;s.wagon=Math.min(100,s.wagon+18);notify('The wagon has been repaired.')}
+ if(a==='animals'){s.oxen=Math.min(100,s.oxen+12);s.wood=Math.max(0,s.wood-1);notify('The oxen have been watered and checked.')}
+ renderStats();save();openPanel('camp');draw();
+};
 function poly(points,fill,stroke){ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke()}}
 function ellipse(x,y,rx,ry,fill){ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill()}
 function tree(x,y,scale=1){ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);poly([[-4,0],[4,0],[3,20],[-3,20]],'#66513b');poly([[0,-43],[-20,-12],[0,-17],[19,-9]],'#476a45');poly([[0,-31],[-17,-5],[0,-10],[16,-3]],'#5c8050');ellipse(-7,-17,4,7,'#75915b');ctx.restore()}
@@ -231,8 +232,6 @@ function tick(){sceneTime++;if(sceneTime%3===0)draw();requestAnimationFrame(tick
 window.advanceDay=advanceDay;
 window.addEventListener('resize',draw);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});
-renderStats();draw();if(s.completed){showEvent({type:'Journey complete',title:'You Made It West',text:'This saved journey has already reached the prototype endpoint. Travel is locked. You can review the completed run or start over.',choices:[{label:'Celebrate the arrival',detail:'Keep this completed save.',fn:()=>{}},{label:'Start a new journey',detail:'Reset this device’s saved prototype and begin again in Independence.',fn:()=>{s=fresh();localStorage.removeItem('oregonTrailSave');renderStats();save();}}]});}tick();
-})();
 renderStats();draw();if(s.completed){showEvent({type:'Journey complete',title:'You Made It West',text:'This saved journey has already reached the prototype endpoint. Travel is locked. You can review the completed run or start over.',choices:[{label:'Celebrate the arrival',detail:'Keep this completed save.',fn:()=>{}},{label:'Start a new journey',detail:'Reset this device’s saved prototype and begin again in Independence.',fn:()=>{s=fresh();localStorage.removeItem('oregonTrailSave');renderStats();save();}}]});}tick();
 })();
 </script>
